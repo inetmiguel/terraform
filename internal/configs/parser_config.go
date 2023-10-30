@@ -180,6 +180,13 @@ func (p *Parser) loadConfigFile(path string, override bool) (*File, hcl.Diagnost
 				file.Moved = append(file.Moved, cfg)
 			}
 
+		case "removed":
+			cfg, cfgDiags := decodeRemovedBlock(block)
+			diags = append(diags, cfgDiags...)
+			if cfg != nil {
+				file.Removed = append(file.Removed, cfg)
+			}
+
 		case "import":
 			cfg, cfgDiags := decodeImportBlock(block)
 			diags = append(diags, cfgDiags...)
@@ -283,6 +290,9 @@ var configFileSchema = &hcl.BodySchema{
 		},
 		{
 			Type: "moved",
+		},
+		{
+			Type: "removed",
 		},
 		{
 			Type: "import",
