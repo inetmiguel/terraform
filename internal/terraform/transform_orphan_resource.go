@@ -6,6 +6,7 @@ package terraform
 import (
 	"log"
 
+	"github.com/hashicorp/terraform/internal/addrs"
 	"github.com/hashicorp/terraform/internal/configs"
 	"github.com/hashicorp/terraform/internal/dag"
 	"github.com/hashicorp/terraform/internal/states"
@@ -29,6 +30,11 @@ type OrphanResourceInstanceTransformer struct {
 	// Config is the root node in the configuration tree. We'll look up
 	// the appropriate note in this tree using the path in each node.
 	Config *configs.Config
+
+	// forgetTargets is a list of resources to be forgotten. If an orphaned
+	// resource is in the forget list, it should be forgotten, i.e. removed
+	// from state, instead of destroyed.
+	forgetTargets []addrs.ConfigResource
 
 	// Do not apply this transformer
 	skip bool

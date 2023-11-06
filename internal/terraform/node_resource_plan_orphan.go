@@ -24,6 +24,10 @@ type NodePlannableResourceInstanceOrphan struct {
 	// skipPlanChanges indicates we should skip trying to plan change actions
 	// for any instances.
 	skipPlanChanges bool
+
+	// forget indicates that the resource should not be destroyed, only removed
+	// from state.
+	forgetTargets []addrs.ConfigResource
 }
 
 var (
@@ -132,16 +136,31 @@ func (n *NodePlannableResourceInstanceOrphan) managedResourceExecute(ctx EvalCon
 		return diags.Append(n.writeResourceInstanceState(ctx, oldState, workingState))
 	}
 
-	var change *plans.ResourceInstanceChange
-	change, destroyPlanDiags := n.planDestroy(ctx, oldState, "")
-	diags = diags.Append(destroyPlanDiags)
-	if diags.HasErrors() {
-		return diags
+	var forget bool
+	for _, ft := range n.forgetTargets {
+		if ft.Equal(n.ResourceAddr()) {
+			forget = true
+		}
 	}
+	var change *plans.ResourceInstanceChange
+	var pDiags tfdiags.Diagnostics
+	if forget {
+		change, pDiags = n.planForget(ctx, oldState)
+		diags = diags.Append(pDiags)
+		if diags.HasErrors() {
+			return diags
+		}
+	} else {
+		change, pDiags = n.planDestroy(ctx, oldState, "")
+		diags = diags.Append(pDiags)
+		if diags.HasErrors() {
+			return diags
+		}
 
-	diags = diags.Append(n.checkPreventDestroy(change))
-	if diags.HasErrors() {
-		return diags
+		diags = diags.Append(n.checkPreventDestroy(change))
+		if diags.HasErrors() {
+			return diags
+		}
 	}
 
 	// We might be able to offer an approximate reason for why we are
