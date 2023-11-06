@@ -90,6 +90,7 @@ type Change struct {
 	//    ["delete", "create"]
 	//    ["create", "delete"]
 	//    ["delete"]
+	//    ["forget"]
 	// The two "replace" actions are represented in this way to allow callers to
 	// e.g. just scan the list for "delete" to recognize all three situations
 	// where the object will be deleted, allowing for any new deletion
@@ -816,6 +817,8 @@ func actionString(action string) []string {
 		return []string{"read"}
 	case action == "DeleteThenCreate":
 		return []string{"delete", "create"}
+	case action == "Forget":
+		return []string{"forget"}
 	default:
 		return []string{action}
 	}
@@ -843,6 +846,8 @@ func UnmarshalActions(actions []string) plans.Action {
 			return plans.Update
 		case "read":
 			return plans.Read
+		case "forget":
+			return plans.Forget
 		case "no-op":
 			return plans.NoOp
 		}
