@@ -6,7 +6,6 @@ package terraform
 import (
 	"log"
 
-	"github.com/hashicorp/terraform/internal/instances"
 	"github.com/hashicorp/terraform/internal/plans"
 	"github.com/hashicorp/terraform/internal/tfdiags"
 
@@ -77,36 +76,8 @@ func (n *NodeForgetResourceInstance) Execute(ctx EvalContext, op walkOperation) 
 		return diags
 	}
 
-	diags = diags.Append(n.preApplyHook(ctx, changeApply))
-	if diags.HasErrors() {
-		return diags
-	}
+	ctx.State().ForgetResourceInstanceAll(n.Addr)
 
-	// KEM should destroy provisioners be run ?
-	// // Run destroy provisioners if not tainted
-	// if state.Status != states.ObjectTainted {
-	// 	applyProvisionersDiags := n.evalApplyProvisioners(ctx, state, false, configs.ProvisionerWhenDestroy)
-	// 	diags = diags.Append(applyProvisionersDiags)
-	// 	// keep the diags separate from the main set until we handle the cleanup
-
-	// 	if diags.HasErrors() {
-	// 		// If we have a provisioning error, then we just call
-	// 		// the post-apply hook now.
-	// 		diags = diags.Append(n.postApplyHook(ctx, state, diags.Err()))
-	// 		return diags
-	// 	}
-	// }
-
-	// Pass a nil configuration to apply
-	s, d := n.apply(ctx, state, changeApply, nil, instances.RepetitionData{}, false)
-	state, diags = s, diags.Append(d)
-	// If there are diags, save the state first
-	err = n.writeResourceInstanceState(ctx, state, workingState)
-	if err != nil {
-		return diags.Append(err)
-	}
-
-	diags = diags.Append(n.postApplyHook(ctx, state, diags.Err()))
 	diags = diags.Append(updateStateHook(ctx))
 	return diags
 }
